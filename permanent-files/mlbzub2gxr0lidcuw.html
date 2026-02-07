@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>رفع الملفات إلى جيت هاب</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f4; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block; }
+        input { margin: 10px 0; }
+        #linkArea { margin-top: 20px; color: blue; word-break: break-all; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>رفع (صور، فيديو، صوت) إلى GitHub</h2>
+    <input type="file" id="fileInput" accept="image/*,video/*,audio/*">
+    <br>
+    <button onclick="uploadFile()">رفع الملف الآن</button>
+    
+    <div id="status"></div>
+    <div id="linkArea"></div>
+</div>
+
+<script>
+    // 🛑 ضع التوكن الجديد هنا (بعد حذفه وإنشاء واحد جديد)
+    const TOKEN = "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"; 
+    
+    
+    const USER = "elgoharymd";
+    const REPO = "my-data";
+
+    async function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        const status = document.getElementById('status');
+        const linkArea = document.getElementById('linkArea');
+
+        if (fileInput.files.length === 0) {
+            alert("من فضلك اختر ملفاً أولاً");
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const fileName = `${Date.now()}-${file.name}`; // اسم فريد للملف باستخدام الوقت
+        const reader = new FileReader();
+
+        status.innerText = "جاري التحويل والرفع...";
+
+        reader.onload = async function () {
+            // تحويل الملف إلى بصيغة Base64 ليقبله GitHub
+            const base64Content = reader.result.split(',')[1];
+
+            const url = `https://api.github.com/repos/${USER}/${REPO}/contents/uploads/${fileName}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: "PUT",
+                    headers: {
+                        "Authorization": `token ${TOKEN}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        message: `رفع ملف: ${fileName}`,
+                        content: base64Content
+                    })
+                });
+
+                if (response.ok) {
+                    status.innerText = "✅ تم الرفع بنجاح!";
+                    // رابط المشاركة المباشر (باستخدام jsDelivr ليعمل كروابط مباشرة)
+                    const downloadUrl = `https://cdn.jsdelivr.net/gh/${USER}/${REPO}/uploads/${fileName}`;
+                    linkArea.innerHTML = `
+                        <p>رابط الملف القابل للمشاركة:</p>
+                        <a href="${downloadUrl}" target="_blank">${downloadUrl}</a>
+                    `;
+                } else {
+                    status.innerText = "❌ فشل الرفع. تأكد من الإعدادات.";
+                }
+            } catch (error) {
+                status.innerText = "❌ حدث خطأ في الاتصال.";
+            }
+        };
+
+        reader.readAsDataURL(file);
+    }
+</script>
+
+</body>
+</html>
