@@ -5,8 +5,9 @@ const path = require('path');
 const app = express();
 
 app.use(cors());
-// زيادة الحجم لضمان وصول الملف كاملاً بدون نقص
+// رفع القيود تماماً عن حجم الملفات لضمان وصولها كاملة
 app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 // إعدادات Cloudinary
 cloudinary.config({ 
@@ -24,22 +25,19 @@ app.post('/upload', async (req, res) => {
         const { fileData } = req.body;
         if (!fileData) return res.status(400).json({ error: "No data" });
 
-        // 1. الرفع مع التأكد من نوع الملف
+        // الرفع المباشر بدون أي فلاتر أو تعديلات (Raw Mode)
         const result = await cloudinary.uploader.upload(fileData, {
-            resource_type: "auto", // يتعرف تلقائياً على (صورة، فيديو، raw)
-            folder: "permanent_files",
-            flags: "attachment:false" 
+            resource_type: "auto", // يتعرف على النوع تلقائياً
+            folder: "direct_uploads",
+            use_filename: true,
+            unique_filename: true,
+            // إلغاء أي تحويلات تلقائية قد تفسد الملف
+            delivery_type: "upload"
         });
 
-        // 2. حل مشكلة "الملف غير الأصلي" والتحميل التلقائي:
-        // نستخدم الرابط الآمن ونضيف f_auto (تنسيق تلقائي) 
-        // ونحذف أي خيارات قد تجبر المتصفح على التحميل كملف غريب
-        let finalUrl = result.secure_url;
-
-        // إضافة fl_inline تضمن فتح الملف داخل المتصفح كـ (صورة أو PDF) وليس تحميله
-        finalUrl = finalUrl.replace('/upload/', '/upload/f_auto,fl_inline/');
-
-        res.json({ success: true, url: finalUrl });
+        // إرسال الرابط الأصلي كما جاء من Cloudinary تماماً
+        // ملحوظة: إذا أردت فتحه في المتصفح، سيعتمد ذلك على نوع الملف الأصلي
+        res.json({ success: true, url: result.secure_url });
 
     } catch (error) {
         console.error("Cloudinary Error:", error);
