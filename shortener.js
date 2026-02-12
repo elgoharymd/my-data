@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 
 // بيانات الاتصال بقاعدة البيانات (ضع قيمك هنا)
-const REDIS_URL = "رابط_UPSTASH_هنا";
-const REDIS_TOKEN = "توكن_UPSTASH_هنا";
+const REDIS_URL = "https://measured-boxer-55160.upstash.io";
+const REDIS_TOKEN = "Add4AAIncDI4MzI2NWQ0MzE4OGM0YzExYWI4ODdlZDQ5OGJkMzcwN3AyNTUxNjA";
 
 // دالة لحفظ الرابط في القاعدة السحابية
 async function saveUrl(id, longUrl) {
