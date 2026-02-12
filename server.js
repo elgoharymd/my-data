@@ -9,7 +9,7 @@ app.use(express.json({ limit: '50mb' }));
 
 // --- ضع مفاتيحك الجديدة هنا بعناية ---
 cloudinary.config({ 
-  cloud_name: 'ywhltfmo', 
+  cloud_name: 'md', 
   api_key: '281538369882913', 
   api_secret: 'P-eHCflFjiVa5EkJP_9FlXy6DTM' 
 });
@@ -25,7 +25,7 @@ app.post('/upload', async (req, res) => {
         const { fileData, apiKey } = req.body;
 
         // تأكد أن هذه الكلمة هي نفسها الموجودة في ملف index.html
-        if (apiKey !== "my_secret_password_123") {
+        if (apiKey !== "my_secret_password_1234") {
             return res.status(403).json({ error: "فشل التحقق من الهوية" });
         }
 
