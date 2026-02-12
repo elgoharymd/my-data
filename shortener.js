@@ -5,9 +5,10 @@ const path = require('path');
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+// زيادة الحجم لضمان وصول الملف كاملاً بدون نقص
+app.use(express.json({ limit: '100mb' }));
 
-// 1. إعدادات Cloudinary (تأكد من صحة المفاتيح)
+// إعدادات Cloudinary
 cloudinary.config({ 
   cloud_name: 'dipkjcauf', 
   api_key: '281538369882913', 
@@ -18,24 +19,27 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 2. مسار الرفع المباشر والدائم
 app.post('/upload', async (req, res) => {
     try {
         const { fileData } = req.body;
         if (!fileData) return res.status(400).json({ error: "No data" });
 
-        // الرفع مع إعدادات تمنع الحذف أو التغيير
+        // 1. الرفع مع التأكد من نوع الملف
         const result = await cloudinary.uploader.upload(fileData, {
-            resource_type: "auto",
-            folder: "permanent_files", // مجلد خاص للملفات الدائمة
-            access_mode: "public"      // التأكد من أن الرابط متاح للجميع دائماً
+            resource_type: "auto", // يتعرف تلقائياً على (صورة، فيديو، raw)
+            folder: "permanent_files",
+            flags: "attachment:false" 
         });
 
-        // تعديل الرابط لضمان "العرض المباشر" ومنع "التحميل التلقائي"
-        // f_auto: يختار أفضل صيغة للمتصفح / fl_inline: يفتح الصورة ولا يحملها
-        const permanentUrl = result.secure_url.replace('/upload/', '/upload/f_auto,fl_inline/');
+        // 2. حل مشكلة "الملف غير الأصلي" والتحميل التلقائي:
+        // نستخدم الرابط الآمن ونضيف f_auto (تنسيق تلقائي) 
+        // ونحذف أي خيارات قد تجبر المتصفح على التحميل كملف غريب
+        let finalUrl = result.secure_url;
 
-        res.json({ success: true, url: permanentUrl });
+        // إضافة fl_inline تضمن فتح الملف داخل المتصفح كـ (صورة أو PDF) وليس تحميله
+        finalUrl = finalUrl.replace('/upload/', '/upload/f_auto,fl_inline/');
+
+        res.json({ success: true, url: finalUrl });
 
     } catch (error) {
         console.error("Cloudinary Error:", error);
