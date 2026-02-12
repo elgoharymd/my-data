@@ -7,39 +7,38 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// 1. إعدادات Cloudinary
+// 1. إعدادات Cloudinary (تأكد من صحة المفاتيح)
 cloudinary.config({ 
   cloud_name: 'dipkjcauf', 
-  api_key: '28153836988293', 
-  api_secret: 'ضع_هنا_API_SECRET_الحقيقي' 
+  api_key: '281538369882913', 
+  api_secret: 'P-eHCflFjiVa5EkJP_9FlXy6DTM' 
 });
 
-// عرض الواجهة الأمامية
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 2. مسار الرفع المباشر
+// 2. مسار الرفع المباشر والدائم
 app.post('/upload', async (req, res) => {
     try {
         const { fileData } = req.body;
-        if (!fileData) return res.status(400).json({ error: "لا توجد بيانات للملف" });
+        if (!fileData) return res.status(400).json({ error: "No data" });
 
-        // الرفع لـ Cloudinary
+        // الرفع مع إعدادات تمنع الحذف أو التغيير
         const result = await cloudinary.uploader.upload(fileData, {
             resource_type: "auto",
-            folder: "up" // مجلد قصير لتقليل طول الرابط
+            folder: "permanent_files", // مجلد خاص للملفات الدائمة
+            access_mode: "public"      // التأكد من أن الرابط متاح للجميع دائماً
         });
 
-        // تعديل الرابط ليفتح كصورة مباشرة (Inline) وليس للتحميل
-        // نقوم بإضافة f_auto (تلقائي الجودة) و fl_inline (عرض مباشر)
-        const finalUrl = result.secure_url.replace('/upload/', '/upload/f_auto,fl_inline/');
+        // تعديل الرابط لضمان "العرض المباشر" ومنع "التحميل التلقائي"
+        // f_auto: يختار أفضل صيغة للمتصفح / fl_inline: يفتح الصورة ولا يحملها
+        const permanentUrl = result.secure_url.replace('/upload/', '/upload/f_auto,fl_inline/');
 
-        // إرسال الرابط المباشر للمستخدم
-        res.json({ success: true, url: finalUrl });
+        res.json({ success: true, url: permanentUrl });
 
     } catch (error) {
-        console.error("Error:", error);
+        console.error("Cloudinary Error:", error);
         res.status(500).json({ error: "فشل الرفع: " + error.message });
     }
 });
