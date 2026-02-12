@@ -16,8 +16,10 @@ cloudinary.config({
 
 const API_KEY = "my_secret_password_123"; // كلمة سر الرفع من هاتفك
 
-app.get('/', (req, res) => res.send("سيرفرك السحابي جاهز!"));
-
+const path = require('path');
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 // مسار الرفع الذكي
 app.post('/upload', async (req, res) => {
     try {
