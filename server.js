@@ -25,7 +25,7 @@ app.post('/upload', async (req, res) => {
         const { fileData, apiKey } = req.body;
 
         // تأكد أن هذه الكلمة هي نفسها الموجودة في ملف index.html
-        if (apiKey !== "my_secret_password_1234") {
+        if (apiKey !== "my_secret_password_123") {
             return res.status(403).json({ error: "فشل التحقق من الهوية" });
         }
 
