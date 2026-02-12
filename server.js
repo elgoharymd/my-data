@@ -9,9 +9,9 @@ app.use(express.json({ limit: '50mb' }));
 
 // --- إعدادات Cloudinary (ضع بياناتك هنا) ---
 cloudinary.config({ 
-  cloud_name: 'ضع_هنا_الاسم', 
-  api_key: 'ضع_هنا_الكاي', 
-  api_secret: 'ضع_هنا_السيكرت' 
+  cloud_name: 'MD', 
+  api_key: '745371657797883', 
+  api_secret: 'mVDicHqeQDyCSTFM4He8I71JmiM' 
 });
 
 const API_KEY = "my_secret_password_123"; // كلمة سر الرفع من هاتفك
