@@ -7,49 +7,44 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// --- ضع مفاتيحك الجديدة هنا بعناية ---
+// إعدادات Cloudinary
 cloudinary.config({ 
   cloud_name: 'dipkjcauf', 
   api_key: '281538369882913', 
-  api_secret: 'P-eHCflFjiVa5EkJP_9FlXy6DTM' 
+  api_secret: 'P-eHCflFjiVa5EkJP_9FlXy6DTM' // تأكد أن هذا هو الكود السري الكامل من الموقع
 });
 
-// السيرفر يفتح صفحة الواجهة فوراً
+// تشغيل صفحة الواجهة
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// مسار الرفع والاختصار
 app.post('/upload', async (req, res) => {
     try {
         const { fileData } = req.body;
 
-        // 1. الرفع لـ Cloudinary وتخزين النتيجة في متغير اسمه result
+        if (!fileData) {
+            return res.status(400).json({ error: "لا يوجد بيانات للملف" });
+        }
+
+        // 1. الرفع لـ Cloudinary
         const result = await cloudinary.uploader.upload(fileData, {
             resource_type: "auto",
             folder: "my_uploads"
         });
 
-        // 2. الحصول على الرابط الطويل من النتيجة التي حصلنا عليها
         const longUrl = result.secure_url;
 
-        // 3. اختصار الرابط (تأكدنا من أن longUrl موجود الآن)
+        // 2. اختصار الرابط عبر TinyURL
         const tinyRes = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
         const shortUrl = await tinyRes.text();
 
-        // 4. إرسال الرابط القصير النهائي
+        // 3. إرسال الرابط النهائي
         res.json({ success: true, url: shortUrl });
 
     } catch (error) {
         console.error("Error details:", error);
-        res.status(500).json({ error: "فشل الرفع: " + error.message });
-    }
-});
-// تأكد أننا نرسل الرابط الآمن (https)
-res.json({ success: true, url: result.secure_url });
-        res.json({ success: true, url: result.secure_url });
-
-    } catch (error) {
-        console.error("Cloudinary Error:", error);
         res.status(500).json({ error: "فشل الرفع: " + error.message });
     }
 });
