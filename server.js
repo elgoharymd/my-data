@@ -30,9 +30,11 @@ app.post('/upload', async (req, res) => {
         }
 
         // إرسال الصورة للسحاب
-        const result = await cloudinary.uploader.upload(fileData, {
-            resource_type: "auto"
-        });
+// استبدل الجزء القديم بهذا
+const result = await cloudinary.uploader.upload(fileData, {
+    resource_type: "auto",
+    folder: "my_uploads" // سيتم إنشاء مجلد بهذا الاسم في حسابك تلقائياً
+});
 
         res.json({ success: true, url: result.secure_url });
 
