@@ -1,0 +1,14 @@
+{
+  "name": "pro-json-server",
+  "version": "1.0.0",
+  "description": "Professional JSON Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "json-server --watch database.json --port 5000"
+  },
+  "dependencies": {
+    "json-server": "^0.17.4",
+    "cors": "^2.8.5"
+  }
+}
