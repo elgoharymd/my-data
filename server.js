@@ -29,12 +29,30 @@ app.post('/upload', async (req, res) => {
             return res.status(403).json({ error: "فشل التحقق من الهوية" });
         }
 
-// استبدل جزء الرفع بهذا الكود المطور
-const result = await cloudinary.uploader.upload(fileData, {
-    resource_type: "auto",
-    folder: "my_uploads",
-    use_filename: true,
-    unique_filename: true
+app.post('/upload', async (req, res) => {
+    try {
+        const { fileData } = req.body;
+
+        // 1. رفع الملف إلى Cloudinary
+        const result = await cloudinary.uploader.upload(fileData, {
+            resource_type: "auto",
+            folder: "my_uploads"
+        });
+
+        const longUrl = result.secure_url;
+
+        // 2. اختصار الرابط عبر TinyURL
+        // نستخدم fetch المدمج في Node.js (متوفر في الإصدارات الحديثة على Vercel)
+        const tinyRes = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+        const shortUrl = await tinyRes.text();
+
+        // 3. إرسال الرابط القصير للمستخدم
+        res.json({ success: true, url: shortUrl });
+
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({ error: "حدث خطأ: " + error.message });
+    }
 });
 
 // تأكد أننا نرسل الرابط الآمن (https)
