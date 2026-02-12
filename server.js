@@ -29,13 +29,16 @@ app.post('/upload', async (req, res) => {
             return res.status(403).json({ error: "فشل التحقق من الهوية" });
         }
 
-        // إرسال الصورة للسحاب
-// استبدل الجزء القديم بهذا
+// استبدل جزء الرفع بهذا الكود المطور
 const result = await cloudinary.uploader.upload(fileData, {
     resource_type: "auto",
-    folder: "my_uploads" // سيتم إنشاء مجلد بهذا الاسم في حسابك تلقائياً
+    folder: "my_uploads",
+    use_filename: true,
+    unique_filename: true
 });
 
+// تأكد أننا نرسل الرابط الآمن (https)
+res.json({ success: true, url: result.secure_url });
         res.json({ success: true, url: result.secure_url });
 
     } catch (error) {
