@@ -7,26 +7,22 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// إعدادات Cloudinary
+// --- إعدادات Cloudinary ---
 cloudinary.config({ 
   cloud_name: 'dipkjcauf', 
   api_key: '281538369882913', 
-  api_secret: 'P-eHCflFjiVa5EkJP_9FlXy6DTM' // تأكد أن هذا هو الكود السري الكامل من الموقع
+  api_secret: 'P-eHCflFjiVa5EkJP_9FlXy6DTM'  P-ك بالكود الطويل من الموقع
 });
 
-// تشغيل صفحة الواجهة
+// تشغيل الواجهة
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// مسار الرفع والاختصار
+// عملية الرفع والاختصار
 app.post('/upload', async (req, res) => {
     try {
         const { fileData } = req.body;
-
-        if (!fileData) {
-            return res.status(400).json({ error: "لا يوجد بيانات للملف" });
-        }
 
         // 1. الرفع لـ Cloudinary
         const result = await cloudinary.uploader.upload(fileData, {
@@ -34,17 +30,15 @@ app.post('/upload', async (req, res) => {
             folder: "my_uploads"
         });
 
-        const longUrl = result.secure_url;
-
-        // 2. اختصار الرابط عبر TinyURL
-        const tinyRes = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+        // 2. اختصار الرابط وتنظيفه
+        const tinyRes = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(result.secure_url)}`);
         const shortUrl = await tinyRes.text();
 
-        // 3. إرسال الرابط النهائي
-        res.json({ success: true, url: shortUrl });
+        // 3. إرسال الرابط النهائي النظيف
+        res.json({ success: true, url: shortUrl.trim() });
 
     } catch (error) {
-        console.error("Error details:", error);
+        console.error("Error:", error);
         res.status(500).json({ error: "فشل الرفع: " + error.message });
     }
 });
