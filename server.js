@@ -1,6 +1,7 @@
 const express = require('express');
 const cloudinary = require('cloudinary').v2;
 const cors = require('cors');
+const shortener = require('./shortener');
 const path = require('path');
 const app = express();
 
@@ -38,5 +39,6 @@ app.post('/upload', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+app.use('/s', shortener); // أي رابط يبدأ بـ /s سيذهب لنظام الاختصار
 
 module.exports = app;
