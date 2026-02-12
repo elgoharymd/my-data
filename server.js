@@ -9,8 +9,8 @@ app.use(express.json({ limit: '50mb' }));
 
 // --- إعدادات Cloudinary (ضع بياناتك هنا) ---
 cloudinary.config({ 
-  cloud_name: 'mdmods2468', 
-  api_key: '745371657797883', 
+  cloud_name: 'md', 
+  api_key: '281538369882913', 
   api_secret: 'mVDicHqeQDyCSTFM4He8I71JmiM' 
 });
 
