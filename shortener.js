@@ -1,28 +1,42 @@
 const express = require('express');
 const router = express.Router();
 
-// قاعدة بيانات مؤقتة لتخزين الروابط (في المشاريع الكبيرة نستخدم MongoDB)
-const urlDatabase = {};
+// بيانات الاتصال بقاعدة البيانات (ضع قيمك هنا)
+const REDIS_URL = "رابط_UPSTASH_هنا";
+const REDIS_TOKEN = "توكن_UPSTASH_هنا";
 
-// 1. وظيفة توليد كود عشوائي قصير
-function generateID() {
-    return Math.random().toString(36).substring(2, 8);
+// دالة لحفظ الرابط في القاعدة السحابية
+async function saveUrl(id, longUrl) {
+    await fetch(`${REDIS_URL}/set/${id}`, {
+        headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
+        body: JSON.stringify(longUrl),
+        method: 'POST'
+    });
 }
 
-// 2. مسار لإنشاء الرابط المختصر
-router.post('/shorten', (req, res) => {
+// دالة لجلب الرابط
+async function getUrl(id) {
+    const res = await fetch(`${REDIS_URL}/get/${id}`, {
+        headers: { Authorization: `Bearer ${REDIS_TOKEN}` }
+    });
+    const data = await res.json();
+    return data.result;
+}
+
+// 1. مسار إنشاء الرابط المختصر
+router.post('/shorten', async (req, res) => {
     const { longUrl } = req.body;
-    const id = generateID();
-    urlDatabase[id] = longUrl;
+    const id = Math.random().toString(36).substring(2, 8);
     
-    // سيعطيك رابطاً مثل: your-site.vercel.app/s/abc123
+    await saveUrl(id, longUrl); // حفظ دائم
+    
     const shortUrl = `${req.protocol}://${req.get('host')}/s/${id}`;
     res.json({ shortUrl });
 });
 
-// 3. مسار التحويل (عندما يضغط شخص على الرابط)
-router.get('/:id', (req, res) => {
-    const longUrl = urlDatabase[req.params.id];
+// 2. مسار التحويل التلقائي
+router.get('/:id', async (req, res) => {
+    const longUrl = await getUrl(req.params.id);
     if (longUrl) {
         res.redirect(longUrl);
     } else {
