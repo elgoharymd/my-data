@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// إعدادات Cloudinary - تأكد من وضع المفاتيح الإنجليزية فقط
+// إعدادات Cloudinary
 cloudinary.config({ 
   cloud_name: 'dipkjcauf', 
   api_key: '281538369882913', 
@@ -23,25 +23,16 @@ app.post('/upload', async (req, res) => {
         const { fileData } = req.body;
         if (!fileData) return res.status(400).json({ error: "No data" });
 
-        // الرفع لـ Cloudinary
+        // الرفع لـ Cloudinary مع تفعيل خيار تصغير الاسم
         const result = await cloudinary.uploader.upload(fileData, {
             resource_type: "auto",
-            folder: "my_uploads"
+            folder: "up", // اسم مجلد قصير جداً لتصغير الرابط
+            use_filename: false, 
+            unique_filename: true
         });
 
-        // محاولة الاختصار (بشكل آمن لا يسبب انهيار السيرفر)
-        let finalUrl = result.secure_url;
-        try {
-            const tinyRes = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(finalUrl)}`);
-            if (tinyRes.ok) {
-                const short = await tinyRes.text();
-                finalUrl = short.trim();
-            }
-        } catch (e) {
-            console.log("TinyURL failed, using long URL");
-        }
-
-        res.json({ success: true, url: finalUrl });
+        // إرسال الرابط المباشر الآمن فوراً بدون اختصارات خارجية
+        res.json({ success: true, url: result.secure_url });
 
     } catch (error) {
         res.status(500).json({ error: error.message });
