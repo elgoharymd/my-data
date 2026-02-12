@@ -1,47 +1,48 @@
+
 const express = require('express');
+const cloudinary = require('cloudinary').v2;
 const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // لكي يستطيع السيرفر استقبال صور كبيرة
+app.use(express.json({ limit: '50mb' }));
 
-const DB_FILE = '/tmp/database.json'; // Vercel يسمح بالكتابة فقط في مجلد tmp
-
-// تهيئة قاعدة البيانات إذا لم تكن موجودة
-if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify({ uploads: [] }));
-}
-
-app.get('/', (req, res) => {
-    res.send("السيرفر يعمل بنجاح على Vercel!");
+// --- إعدادات Cloudinary (ضع بياناتك هنا) ---
+cloudinary.config({ 
+  cloud_name: 'ضع_هنا_الاسم', 
+  api_key: 'ضع_هنا_الكاي', 
+  api_secret: 'ضع_هنا_السيكرت' 
 });
 
-// مسار رفع البيانات (بدون مكتبات معقدة لتجنب الـ 500 Error)
-app.post('/upload', (req, res) => {
-    try {
-        const { fileData, fileName, apiKey } = req.body;
+const API_KEY = "my_secret_password_123"; // كلمة سر الرفع من هاتفك
 
-        if (apiKey !== "my_secret_password_123") {
-            return res.status(403).json({ error: "خطأ في مفتاح الأمان" });
+app.get('/', (req, res) => res.send("سيرفرك السحابي جاهز!"));
+
+// مسار الرفع الذكي
+app.post('/upload', async (req, res) => {
+    try {
+        const { fileData, apiKey } = req.body;
+
+        if (apiKey !== API_KEY) {
+            return res.status(403).json({ error: "غير مصرح لك" });
         }
 
-        const db = JSON.parse(fs.readFileSync(DB_FILE));
-        const newEntry = {
-            id: Date.now(),
-            name: fileName,
-            data: fileData, // هنا سيتم حفظ الملف كـ Base64
-            date: new Date()
-        };
+        // الرفع إلى Cloudinary
+        const uploadResponse = await cloudinary.uploader.upload(fileData, {
+            resource_type: "auto", 
+        });
 
-        db.uploads.push(newEntry);
-        fs.writeFileSync(DB_FILE, JSON.stringify(db));
+        // إرجاع الرابط الحقيقي والدائم
+        res.json({
+            success: true,
+            url: uploadResponse.secure_url,
+            public_id: uploadResponse.public_id
+        });
 
-        res.json({ success: true, message: "تم الحفظ بنجاح داخل JSON" });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error(error);
+        res.status(500).json({ error: "فشل الرفع للسحاب" });
     }
 });
 
-module.exports = app; // مهم جداً لـ Vercel
+module.exports = app;
