@@ -1,88 +1,90 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مرفع الملفات الذكي</title>
+    <title>مرفع الملفات الذكي - QR Generator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
-        .card { background: white; max-width: 500px; margin: 50px auto; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .upload-area { border: 2px dashed #007bff; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        .btn { background: #007bff; color: white; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; }
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f9; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: inline-block; max-width: 90%; }
+        #qrcode { margin-top: 20px; display: flex; justify-content: center; background: white; padding: 10px; }
+        .btn { background: #007bff; color: white; padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }
         .btn:disabled { background: #ccc; }
-        #qrcode { margin-top: 25px; display: flex; justify-content: center; padding: 10px; background: white; }
-        #result { margin-top: 20px; padding: 15px; border-top: 1px solid #eee; display: none; }
-        .url-text { color: #007bff; word-break: break-all; font-weight: bold; }
+        #status { display: none; color: #555; margin-top: 15px; }
+        .url-display { word-break: break-all; color: #007bff; font-weight: bold; margin: 15px 0; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>رفع ملف وتوليد QR دائِم</h2>
-    <div class="upload-area">
-        <input type="file" id="fileInput">
-    </div>
-    <button id="uploadBtn" class="btn" onclick="uploadFile()">رفع الملف وتوليد الكود</button>
+<div class="container">
+    <h2>رفع ملف وتوليد QR Code</h2>
+    <input type="file" id="fileInput" style="margin-bottom: 20px;"><br>
+    <button class="btn" id="uploadBtn" onclick="handleUpload()">رفع وتوليد الكود</button>
+    
+    <p id="status">جاري الرفع... يرجى الانتظار</p>
 
-    <div id="result">
-        <p>تم الرفع! الرابط المختصر للـ QR:</p>
-        <p class="url-text" id="shortUrlDisplay"></p>
+    <div id="result" style="display:none;">
+        <p>تم الرفع بنجاح! رابط الملف المباشر:</p>
+        <p class="url-display" id="fileUrl"></p>
         <div id="qrcode"></div>
-        <br>
-        <button class="btn" style="background:#28a745" onclick="window.print()">طباعة الكود</button>
+        <button class="btn" style="background:#28a745; margin-top:15px;" onclick="window.print()">طباعة الكود</button>
     </div>
 </div>
 
 <script>
-async function uploadFile() {
+async function handleUpload() {
     const fileInput = document.getElementById('fileInput');
+    const status = document.getElementById('status');
+    const resultDiv = document.getElementById('result');
     const btn = document.getElementById('uploadBtn');
-    if (!fileInput.files[0]) return alert("اختر ملفاً أولاً");
+    
+    if (!fileInput.files[0]) return alert("يرجى اختيار ملف أولاً");
 
+    status.style.display = "block";
     btn.disabled = true;
-    btn.innerText = "جاري الرفع...";
+    resultDiv.style.display = "none";
 
+    const file = fileInput.files[0];
     const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
-    formData.append('upload_preset', 'ml_default'); // تأكد من تفعيل Unsigned Upload في Cloudinary
+    
+    // إعدادات Cloudinary المباشرة (Unsigned)
+    formData.append('file', file);
+    formData.append('upload_preset', 'ml_default'); // تأكد أن هذا الاسم مطابق لما في إعدادات Cloudinary
 
     try {
-        // 1. الرفع لـ Cloudinary
+        // الرفع المباشر لـ Cloudinary
         const cloudRes = await fetch('https://api.cloudinary.com/v1_1/dipkjcauf/auto/upload', {
             method: 'POST',
             body: formData
         });
-        const cloudData = await cloudRes.json();
-
-        // 2. إرسال الرابط لسيرفرك للحفظ والاختصار
-        const saveRes = await fetch('/save-link', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ url: cloudData.secure_url })
-        });
-        const saveData = await saveRes.json();
-
-        // 3. عرض النتائج والـ QR
-        document.getElementById('result').style.display = 'block';
-        document.getElementById('shortUrlDisplay').innerText = saveData.url;
         
+        if (!cloudRes.ok) throw new Error('فشل الرفع إلى Cloudinary');
+        
+        const cloudData = await cloudRes.json();
+        const finalUrl = cloudData.secure_url;
+
+        // إظهار النتائج وتوليد الـ QR للرابط المباشر
+        status.style.display = "none";
+        resultDiv.style.display = "block";
+        document.getElementById('fileUrl').innerText = finalUrl;
+
         document.getElementById('qrcode').innerHTML = ""; 
         new QRCode(document.getElementById("qrcode"), {
-            text: saveData.url,
+            text: finalUrl,
             width: 200,
             height: 200
         });
 
-    } catch (err) {
-        alert("حدث خطأ في الرفع");
-        console.error(err);
+    } catch (error) {
+        console.error(error);
+        alert("حدث خطأ في الرفع: " + error.message);
+        status.style.display = "none";
     } finally {
         btn.disabled = false;
-        btn.innerText = "رفع الملف وتوليد الكود";
     }
 }
 </script>
+
 </body>
 </html>
