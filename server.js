@@ -13,7 +13,7 @@ app.use(express.static(__dirname));
 // --- 1. إعدادات Cloudinary ---
 cloudinary.config({ 
   cloud_name: 'dipkjcauf', 
-  api_key: '739423232652243', 
+  api_key: '281538369882913', 
   api_secret: 'P-eHCflFjiVa5EkJP_9FlXy6DTM' 
 });
 
