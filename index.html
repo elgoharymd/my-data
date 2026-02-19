@@ -1,186 +1,88 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مركز رفع الملفات السريع</title>
+    <title>مرفع الملفات الذكي</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root {
-            --primary-color: #4f46e5;
-            --bg-color: #f9fafb;
-            --card-bg: #ffffff;
-            --text-main: #1f2937;
-            --text-sub: #6b7280;
-            --border-color: #e5e7eb;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .upload-card {
-            background: var(--card-bg);
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-        }
-
-        h2 { margin-bottom: 0.5rem; color: var(--text-main); }
-        p { color: var(--text-sub); font-size: 0.9rem; margin-bottom: 1.5rem; }
-
-        .drop-zone {
-            border: 2px dashed var(--border-color);
-            border-radius: 12px;
-            padding: 2rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #fdfdfd;
-        }
-
-        .drop-zone:hover {
-            border-color: var(--primary-color);
-            background: #f5f3ff;
-        }
-
-        input[type="file"] { display: none; }
-
-        .btn {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 1rem;
-            transition: opacity 0.3s;
-        }
-
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        #result {
-            margin-top: 1.5rem;
-            display: none;
-            word-break: break-all;
-        }
-
-        .url-box {
-            background: #f3f4f6;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            border: 1px solid var(--border-color);
-            margin-top: 5px;
-            color: var(--primary-color);
-            text-decoration: none;
-            display: block;
-        }
-
-        .loader {
-            display: none;
-            margin: 10px auto;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
+        .card { background: white; max-width: 500px; margin: 50px auto; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .upload-area { border: 2px dashed #007bff; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .btn { background: #007bff; color: white; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; }
+        .btn:disabled { background: #ccc; }
+        #qrcode { margin-top: 25px; display: flex; justify-content: center; padding: 10px; background: white; }
+        #result { margin-top: 20px; padding: 15px; border-top: 1px solid #eee; display: none; }
+        .url-text { color: #007bff; word-break: break-all; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="upload-card">
-    <h2>رفع الملفات</h2>
-    <p>اختر صورة أو ملفاً لرفعه مباشرة</p>
-
-    <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
-        <span id="fileName">اضغط هنا لاختيار ملف</span>
-        <input type="file" id="fileInput" onchange="updateFileName()">
+<div class="card">
+    <h2>رفع ملف وتوليد QR دائِم</h2>
+    <div class="upload-area">
+        <input type="file" id="fileInput">
     </div>
-
-    <button class="btn" id="uploadBtn" onclick="handleUpload()">بدء الرفع</button>
-    
-    <div class="loader" id="loader"></div>
+    <button id="uploadBtn" class="btn" onclick="uploadFile()">رفع الملف وتوليد الكود</button>
 
     <div id="result">
-        <p>تم الرفع بنجاح! الرابط المباشر:</p>
-        <a href="#" id="fileUrl" class="url-box" target="_blank"></a>
+        <p>تم الرفع! الرابط المختصر للـ QR:</p>
+        <p class="url-text" id="shortUrlDisplay"></p>
+        <div id="qrcode"></div>
+        <br>
+        <button class="btn" style="background:#28a745" onclick="window.print()">طباعة الكود</button>
     </div>
 </div>
 
 <script>
-    function updateFileName() {
-        const input = document.getElementById('fileInput');
-        const fileNameDisp = document.getElementById('fileName');
-        if (input.files.length > 0) {
-            fileNameDisp.innerText = input.files[0].name;
-            fileNameDisp.style.color = "#4f46e5";
-        }
+async function uploadFile() {
+    const fileInput = document.getElementById('fileInput');
+    const btn = document.getElementById('uploadBtn');
+    if (!fileInput.files[0]) return alert("اختر ملفاً أولاً");
+
+    btn.disabled = true;
+    btn.innerText = "جاري الرفع...";
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('upload_preset', 'ml_default'); // تأكد من تفعيل Unsigned Upload في Cloudinary
+
+    try {
+        // 1. الرفع لـ Cloudinary
+        const cloudRes = await fetch('https://api.cloudinary.com/v1_1/dipkjcauf/auto/upload', {
+            method: 'POST',
+            body: formData
+        });
+        const cloudData = await cloudRes.json();
+
+        // 2. إرسال الرابط لسيرفرك للحفظ والاختصار
+        const saveRes = await fetch('/save-link', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ url: cloudData.secure_url })
+        });
+        const saveData = await saveRes.json();
+
+        // 3. عرض النتائج والـ QR
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('shortUrlDisplay').innerText = saveData.url;
+        
+        document.getElementById('qrcode').innerHTML = ""; 
+        new QRCode(document.getElementById("qrcode"), {
+            text: saveData.url,
+            width: 200,
+            height: 200
+        });
+
+    } catch (err) {
+        alert("حدث خطأ في الرفع");
+        console.error(err);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "رفع الملف وتوليد الكود";
     }
-
-    async function handleUpload() {
-        const fileInput = document.getElementById('fileInput');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const loader = document.getElementById('loader');
-        const resultDiv = document.getElementById('result');
-        const fileUrlA = document.getElementById('fileUrl');
-
-        if (fileInput.files.length === 0) {
-            alert("يرجى اختيار ملف أولاً");
-            return;
-        }
-
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-
-        // تفعيل وضع التحميل
-        uploadBtn.disabled = true;
-        loader.style.display = "block";
-        resultDiv.style.display = "none";
-
-        reader.onload = async (e) => {
-            try {
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fileData: e.target.result })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    fileUrlA.href = data.url;
-                    fileUrlA.innerText = data.url;
-                    resultDiv.style.display = "block";
-                } else {
-                    alert("حدث خطأ أثناء الرفع: " + data.error);
-                }
-            } catch (err) {
-                alert("تعذر الاتصال بالسيرفر");
-            } finally {
-                uploadBtn.disabled = false;
-                loader.style.display = "none";
-            }
-        };
-
-        reader.readAsDataURL(file); // قراءة الملف بصيغة سليمة
-    }
+}
 </script>
-
 </body>
 </html>
