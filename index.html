@@ -3,87 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مرفع الملفات الذكي - QR Generator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <title>لوحة تحكم elgoharyX</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f9; }
-        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: inline-block; max-width: 90%; }
-        #qrcode { margin-top: 20px; display: flex; justify-content: center; background: white; padding: 10px; }
-        .btn { background: #007bff; color: white; padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }
-        .btn:disabled { background: #ccc; }
-        #status { display: none; color: #555; margin-top: 15px; }
-        .url-display { word-break: break-all; color: #007bff; font-weight: bold; margin: 15px 0; }
+        :root { --primary: #4285F4; --dark: #202124; --light: #ffffff; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .login-card { background: var(--light); padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; width: 100%; max-width: 380px; transition: 0.3s; }
+        h2 { color: var(--dark); margin-bottom: 10px; font-size: 24px; }
+        p { color: #5f6368; margin-bottom: 30px; font-size: 14px; }
+        
+        .google-btn { 
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 8px;
+            background: white; cursor: pointer; font-size: 16px; font-weight: 500; color: #3c4043; transition: background 0.2s;
+        }
+        .google-btn:hover { background: #f7f8f8; border-color: #d2d4d7; }
+        .google-icon { width: 20px; height: 20px; }
+
+        #user-profile { display: none; margin-top: 20px; border-top: 1px solid #eee; pt: 20px; }
+        .profile-pic { width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--primary); margin-bottom: 15px; }
+        .welcome-msg { font-size: 18px; font-weight: bold; color: var(--dark); margin: 5px 0; }
+        .user-email { color: #5f6368; font-size: 13px; margin-bottom: 20px; }
+        .logout-btn { background: #ea4335; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>رفع ملف وتوليد QR Code</h2>
-    <input type="file" id="fileInput" style="margin-bottom: 20px;"><br>
-    <button class="btn" id="uploadBtn" onclick="handleUpload()">رفع وتوليد الكود</button>
-    
-    <p id="status">جاري الرفع... يرجى الانتظار</p>
+<div class="login-card" id="app-card">
+    <div id="login-section">
+        <h2>elgoharyX</h2>
+        <p>قم بتسجيل الدخول للوصول إلى بياناتك</p>
+        <button class="google-btn" id="btn-login">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" alt="Google" class="google-icon">
+            المتابعة باستخدام حساب جوجل
+        </button>
+    </div>
 
-    <div id="result" style="display:none;">
-        <p>تم الرفع بنجاح! رابط الملف المباشر:</p>
-        <p class="url-display" id="fileUrl"></p>
-        <div id="qrcode"></div>
-        <button class="btn" style="background:#28a745; margin-top:15px;" onclick="window.print()">طباعة الكود</button>
+    <div id="user-profile">
+        <img id="user-img" class="profile-pic" src="" alt="صورة المستخدم">
+        <div class="welcome-msg" id="display-name"></div>
+        <div class="user-email" id="display-email"></div>
+        <button class="logout-btn" id="btn-logout">تسجيل الخروج</button>
     </div>
 </div>
 
-<script>
-async function handleUpload() {
-    const fileInput = document.getElementById('fileInput');
-    const status = document.getElementById('status');
-    const resultDiv = document.getElementById('result');
-    const btn = document.getElementById('uploadBtn');
-    
-    if (!fileInput.files[0]) return alert("يرجى اختيار ملف أولاً");
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-    status.style.display = "block";
-    btn.disabled = true;
-    resultDiv.style.display = "none";
+    // إعدادات مشروعك commnt-a9855
+    const firebaseConfig = {
+        apiKey: "AIzaSyDWbNnsm1xpaanEkypEEvjrHHosNj713YY",
+        authDomain: "commnt-a9855.firebaseapp.com",
+        projectId: "commnt-a9855",
+        storageBucket: "commnt-a9855.firebasestorage.app",
+        messagingSenderId: "1077378702730",
+        appId: "1:1077378702730:web:d0fece55ac909fb7ac3c73"
+    };
 
-    const file = fileInput.files[0];
-    const formData = new FormData();
-    
-    // إعدادات Cloudinary المباشرة (Unsigned)
-    formData.append('file', file);
-    formData.append('upload_preset', 'ml_default'); // تأكد أن هذا الاسم مطابق لما في إعدادات Cloudinary
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-    try {
-        // الرفع المباشر لـ Cloudinary
-        const cloudRes = await fetch('https://api.cloudinary.com/v1_1/dipkjcauf/auto/upload', {
-            method: 'POST',
-            body: formData
+    // 1. منطق تسجيل الدخول
+    document.getElementById('btn-login').onclick = async () => {
+        try {
+            await signInWithPopup(auth, provider);
+        } catch (error) {
+            console.error("خطأ أثناء الدخول:", error);
+            alert("حدث خطأ: " + error.message);
+        }
+    };
+
+    // 2. مراقبة حالة المستخدم (هل هو مسجل دخول أم لا)
+    onAuthStateChanged(auth, (user) => {
+        const loginSection = document.getElementById('login-section');
+        const userProfile = document.getElementById('user-profile');
+
+        if (user) {
+            // تحديث الواجهة ديناميكياً ببيانات المستخدم
+            loginSection.style.display = 'none';
+            userProfile.style.display = 'block';
+            
+            document.getElementById('display-name').innerText = `أهلاً بك، ${user.displayName}`;
+            document.getElementById('display-email').innerText = user.email;
+            document.getElementById('user-img').src = user.photoURL;
+            
+            console.log("تم جلب بيانات المستخدم بنجاح:", user.uid);
+        } else {
+            loginSection.style.display = 'block';
+            userProfile.style.display = 'none';
+        }
+    });
+
+    // 3. منطق تسجيل الخروج
+    document.getElementById('btn-logout').onclick = () => {
+        signOut(auth).then(() => {
+            console.log("تم تسجيل الخروج");
         });
-        
-        if (!cloudRes.ok) throw new Error('فشل الرفع إلى Cloudinary');
-        
-        const cloudData = await cloudRes.json();
-        const finalUrl = cloudData.secure_url;
-
-        // إظهار النتائج وتوليد الـ QR للرابط المباشر
-        status.style.display = "none";
-        resultDiv.style.display = "block";
-        document.getElementById('fileUrl').innerText = finalUrl;
-
-        document.getElementById('qrcode').innerHTML = ""; 
-        new QRCode(document.getElementById("qrcode"), {
-            text: finalUrl,
-            width: 200,
-            height: 200
-        });
-
-    } catch (error) {
-        console.error(error);
-        alert("حدث خطأ في الرفع: " + error.message);
-        status.style.display = "none";
-    } finally {
-        btn.disabled = false;
-    }
-}
+    };
 </script>
 
 </body>
