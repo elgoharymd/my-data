@@ -3,54 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم elgoharyX</title>
+    <title>elgoharyX - Advanced Auth</title>
     <style>
-        :root { --primary: #4285F4; --dark: #202124; --light: #ffffff; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .login-card { background: var(--light); padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; width: 100%; max-width: 380px; transition: 0.3s; }
-        h2 { color: var(--dark); margin-bottom: 10px; font-size: 24px; }
-        p { color: #5f6368; margin-bottom: 30px; font-size: 14px; }
-        
-        .google-btn { 
-            display: flex; align-items: center; justify-content: center; gap: 12px;
-            width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 8px;
-            background: white; cursor: pointer; font-size: 16px; font-weight: 500; color: #3c4043; transition: background 0.2s;
-        }
-        .google-btn:hover { background: #f7f8f8; border-color: #d2d4d7; }
-        .google-icon { width: 20px; height: 20px; }
-
-        #user-profile { display: none; margin-top: 20px; border-top: 1px solid #eee; pt: 20px; }
-        .profile-pic { width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--primary); margin-bottom: 15px; }
-        .welcome-msg { font-size: 18px; font-weight: bold; color: var(--dark); margin: 5px 0; }
-        .user-email { color: #5f6368; font-size: 13px; margin-bottom: 20px; }
-        .logout-btn { background: #ea4335; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; }
+        .section { display: none; margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 10px; }
+        .active { display: block; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        .google-btn { background: #4285F4; color: white; }
+        .verify-btn { background: #34a853; color: white; }
+        .phone-btn { background: #fbbc05; color: black; }
+        #status { margin-top: 15px; font-size: 14px; color: #d93025; }
     </style>
 </head>
 <body>
 
-<div class="login-card" id="app-card">
-    <div id="login-section">
-        <h2>elgoharyX</h2>
-        <p>قم بتسجيل الدخول للوصول إلى بياناتك</p>
-        <button class="google-btn" id="btn-login">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" alt="Google" class="google-icon">
-            المتابعة باستخدام حساب جوجل
-        </button>
+<div class="container">
+    <h2>منصة elgoharyX</h2>
+    <div id="status"></div>
+
+    <div id="login-section" class="section active">
+        <button class="google-btn" id="google-login">المتابعة باستخدام جوجل</button>
     </div>
 
-    <div id="user-profile">
-        <img id="user-img" class="profile-pic" src="" alt="صورة المستخدم">
-        <div class="welcome-msg" id="display-name"></div>
-        <div class="user-email" id="display-email"></div>
-        <button class="logout-btn" id="btn-logout">تسجيل الخروج</button>
+    <div id="email-verify-section" class="section">
+        <p>إيميلك غير مفعل، اضغط لإرسال رابط التحقق:</p>
+        <button class="verify-btn" id="send-verify-email">إرسال رابط التحقق للإيميل</button>
+        <button onclick="location.reload()">لقد قمت بالتحقق (تحديث)</button>
+    </div>
+
+    <div id="phone-section" class="section">
+        <p>خطوة أخيرة: أثبت ملكية هاتفك</p>
+        <input type="tel" id="phone-number" placeholder="+201234567890">
+        <div id="recaptcha-container"></div>
+        <button class="phone-btn" id="send-otp">إرسال كود التحقق (SMS)</button>
+        
+        <div id="otp-input-group" style="display:none;">
+            <input type="text" id="otp-code" placeholder="أدخل الكود المكون من 6 أرقام">
+            <button class="verify-btn" id="confirm-otp">تأكيد رقم الهاتف</button>
+        </div>
+    </div>
+
+    <div id="dashboard" class="section">
+        <h3 id="user-name"></h3>
+        <p style="color: green;">✅ حسابك موثق بالكامل (إيميل وهاتف)</p>
+        <button onclick="signOutUser()" style="background:#eee;">خروج</button>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, sendEmailVerification, onAuthStateChanged, signOut, RecaptchaVerifier, signInWithPhoneNumber, linkWithCredential, PhoneAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-    // إعدادات مشروعك commnt-a9855
     const firebaseConfig = {
         apiKey: "AIzaSyDWbNnsm1xpaanEkypEEvjrHHosNj713YY",
         authDomain: "commnt-a9855.firebaseapp.com",
@@ -62,45 +67,73 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
+    let confirmationResult;
 
-    // 1. منطق تسجيل الدخول
-    document.getElementById('btn-login').onclick = async () => {
+    // 1. الدخول بجوجل
+    document.getElementById('google-login').onclick = async () => {
         try {
-            await signInWithPopup(auth, provider);
-        } catch (error) {
-            console.error("خطأ أثناء الدخول:", error);
-            alert("حدث خطأ: " + error.message);
-        }
+            await signInWithPopup(auth, new GoogleAuthProvider());
+        } catch (e) { showStatus(e.message); }
     };
 
-    // 2. مراقبة حالة المستخدم (هل هو مسجل دخول أم لا)
+    // 2. مراقبة الحالة (المحرك الديناميكي)
     onAuthStateChanged(auth, (user) => {
-        const loginSection = document.getElementById('login-section');
-        const userProfile = document.getElementById('user-profile');
-
-        if (user) {
-            // تحديث الواجهة ديناميكياً ببيانات المستخدم
-            loginSection.style.display = 'none';
-            userProfile.style.display = 'block';
-            
-            document.getElementById('display-name').innerText = `أهلاً بك، ${user.displayName}`;
-            document.getElementById('display-email').innerText = user.email;
-            document.getElementById('user-img').src = user.photoURL;
-            
-            console.log("تم جلب بيانات المستخدم بنجاح:", user.uid);
+        hideAllSections();
+        if (!user) {
+            showSection('login-section');
+        } else if (!user.emailVerified) {
+            showSection('email-verify-section');
+        } else if (!user.phoneNumber) {
+            showSection('phone-section');
+            setupRecaptcha();
         } else {
-            loginSection.style.display = 'block';
-            userProfile.style.display = 'none';
+            showSection('dashboard');
+            document.getElementById('user-name').innerText = "أهلاً " + user.displayName;
         }
     });
 
-    // 3. منطق تسجيل الخروج
-    document.getElementById('btn-logout').onclick = () => {
-        signOut(auth).then(() => {
-            console.log("تم تسجيل الخروج");
-        });
+    // 3. إرسال إيميل التحقق يدوياً
+    document.getElementById('send-verify-email').onclick = async () => {
+        try {
+            await sendEmailVerification(auth.currentUser);
+            showStatus("تم إرسال الرابط! تفقد بريدك.", "green");
+        } catch (e) { showStatus(e.message); }
     };
+
+    // 4. نظام التحقق من الهاتف (SMS)
+    function setupRecaptcha() {
+        if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'invisible' });
+        }
+    }
+
+    document.getElementById('send-otp').onclick = async () => {
+        const phone = document.getElementById('phone-number').value;
+        try {
+            confirmationResult = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
+            document.getElementById('otp-input-group').style.display = 'block';
+            showStatus("تم إرسال الكود هاتفياً", "green");
+        } catch (e) { showStatus(e.message); }
+    };
+
+    document.getElementById('confirm-otp').onclick = async () => {
+        const code = document.getElementById('otp-code').value;
+        try {
+            // ربط رقم الهاتف بحساب جوجل الحالي
+            const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, code);
+            await linkWithCredential(auth.currentUser, credential);
+            showStatus("تم التوثيق بنجاح!", "green");
+        } catch (e) { showStatus("كود خاطئ أو رقم مستخدم مسبقاً"); }
+    };
+
+    // وظائف مساعدة
+    function showSection(id) { document.getElementById(id).classList.add('active'); }
+    function hideAllSections() { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); }
+    function showStatus(msg, color = "red") { 
+        const s = document.getElementById('status');
+        s.innerText = msg; s.style.color = color;
+    }
+    window.signOutUser = () => signOut(auth);
 </script>
 
 </body>
